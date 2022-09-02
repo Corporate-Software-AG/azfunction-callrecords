@@ -27,7 +27,9 @@ const timerTrigger: AzureFunction = async function (context: Context, myTimer: a
 
     let token = await getToken();
     let date = new Date();
-    let callRecords = await getCallRecords(token, date);
+    let startDate = new Date();
+    startDate.setDate(date.getDate() - 1);
+    let callRecords = await getCallRecords(token, startDate, date);
 
     const accountName = CONNECTION_STRING_LAKE.split(";")[1].split("=")[1];
     const accountKey = CONNECTION_STRING_LAKE.split(";")[2].split("=")[1];
@@ -37,7 +39,7 @@ const timerTrigger: AzureFunction = async function (context: Context, myTimer: a
     const fileSystemName = "call-records";
     const fileSystemClient = datalakeServiceClient.getFileSystemClient(fileSystemName);
 
-    let dirName = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+    let dirName = `${date.getFullYear()}-${startDate.getMonth() + 1}-${startDate.getDate()}`
     const directoryClient = fileSystemClient.getDirectoryClient(dirName);
     let response = await directoryClient.create();
     context.log(response);
@@ -58,8 +60,6 @@ const timerTrigger: AzureFunction = async function (context: Context, myTimer: a
         await fileClient.append(detailedRecordString, 0, detailedRecordString.length);
         await fileClient.flush(detailedRecordString.length);
     }
-
-
 };
 
 export default timerTrigger;
@@ -90,9 +90,7 @@ async function getToken(): Promise<string> {
  * Get callRecords
  * @param token Token to authenticate through MS Graph
  */
-async function getCallRecords(token: string, date: Date): Promise<any> {
-    let startDate = new Date();
-    startDate.setDate(date.getDate() - 1);
+async function getCallRecords(token: string, startDate: Date, date: Date): Promise<any> {
 
     let config: AxiosRequestConfig = {
         method: 'get',

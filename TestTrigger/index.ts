@@ -22,7 +22,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     let token = await getToken();
     let date = new Date();
-    let callRecords = await getCallRecords(token, date);
+    let startDate = new Date();
+    startDate.setDate(date.getDate() - 1);
+    let callRecords = await getCallRecords(token, startDate, date);
 
     const accountName = CONNECTION_STRING_LAKE.split(";")[1].split("=")[1];
     const accountKey = CONNECTION_STRING_LAKE.split(";")[2].split("=")[1];
@@ -88,10 +90,7 @@ async function getToken(): Promise<string> {
  * Get callRecords
  * @param token Token to authenticate through MS Graph
  */
-async function getCallRecords(token: string, date: Date): Promise<any> {
-    let startDate = new Date();
-    startDate.setDate(date.getDate() - 1);
-
+async function getCallRecords(token: string, startDate: Date, date: Date): Promise<any> {
     let config: AxiosRequestConfig = {
         method: 'get',
         url: MS_GRAPH_ENDPOINT_CALLRECORDS.replace("{startdate}", `${startDate.getFullYear()}-${startDate.getMonth() + 1}-${startDate.getDate()}`).replace("{enddate}", `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`),
