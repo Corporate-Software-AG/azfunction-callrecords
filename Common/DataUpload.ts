@@ -6,7 +6,7 @@ if (!CONNECTION_STRING) throw Error('Azure Storage Connection string not found')
 
 export async function uploadBlobs(context, token, date, callRecords) {
     const blobServiceClient = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
-    const containerName = "call-records-test";
+    const containerName = "call-records";
     let containerClient = blobServiceClient.getContainerClient(containerName);
 
     const blobName = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}/summary.json`
