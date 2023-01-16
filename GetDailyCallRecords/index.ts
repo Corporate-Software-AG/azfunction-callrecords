@@ -1,6 +1,7 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
+import { buildData } from "../Common/BuildData";
 import { getCallRecords } from "../Common/CallRecords";
-import { uploadBlobs } from "../Common/DataUpload";
+import { uploadBlob } from "../Common/DataUpload";
 import { getToken } from "../Common/Token";
 
 const timerTrigger: AzureFunction = async function (context: Context, myTimer: any): Promise<void> {
@@ -9,6 +10,7 @@ const timerTrigger: AzureFunction = async function (context: Context, myTimer: a
     let startDate = new Date();
     startDate.setDate(date.getDate() - 1);
     let callRecords = await getCallRecords(token, startDate, date);
-    await uploadBlobs(context, token, date, callRecords)
+    let data = await buildData(context, token, callRecords);
+    await uploadBlob(context, date, data);
 };
 export default timerTrigger;
