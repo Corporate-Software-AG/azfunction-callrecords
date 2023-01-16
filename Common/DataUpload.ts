@@ -11,16 +11,22 @@ export async function uploadBlobs(context, token, date, callRecords) {
 
     const blobName = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}/summary.json`
     const blobClient = await containerClient.getBlockBlobClient(blobName);
-    let callRecordsString = JSON.stringify(callRecords);
-    blobClient.upload(callRecordsString, callRecordsString.length)
-    context.log("uploaded: ", blobName);
+    context.log("SUMMARY: ", callRecords)
+    let objs = [];
 
     for (let record of callRecords.value) {
         let detailedRecord = await getDetailedCallRecord(token, record);
-        let detailedRecordString = JSON.stringify(detailedRecord);
-        const blobName = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}/${record.correlationId}.json`
-        const blobClient = await containerClient.getBlockBlobClient(blobName);
-        blobClient.upload(detailedRecordString, detailedRecordString.length);
-        context.log("uploaded: ", blobName);
+        for (let participant of detailedRecord.participants) {
+            let obj = { name: null, displayName: null, phone: null };
+            obj.name = record.id;
+            try { obj.displayName = participant.user.displayName; } catch (e) { obj.displayName = null }
+            try { obj.phone = participant.phone.id; } catch (e) { obj.phone = null }
+            context.log("OBJ: ", obj);
+            objs.push(obj);
+        }
     }
+    context.log("New Summary: ", objs);
+    let cleanSummary = JSON.stringify(objs);
+    blobClient.upload(cleanSummary, cleanSummary.length);
+    context.log("uploaded: ", blobName);
 }
