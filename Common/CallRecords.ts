@@ -47,3 +47,33 @@ export async function getDetailedCallRecord(token: string, record: any): Promise
             return error;
         });
 }
+
+export async function getDataFromFile(containerClient: any, prefix: string, fileName: string): Promise<any> {
+    console.log(`DOWNLOAD: ${prefix}${fileName}`);
+    let blobClient = await containerClient.getBlobClient(`${prefix}${fileName}`)
+    let downloadResponse = await blobClient.download();
+    const downloaded = (
+        await streamToBuffer(downloadResponse.readableStreamBody)
+    ).toString();
+
+    const deleteoptions = {
+        deleteSnapshots: 'include' // or 'only'
+    }
+    blobClient.delete(deleteoptions);
+    console.log(`Deleted blob ${prefix}${fileName}`);
+
+    return JSON.parse(downloaded)
+}
+
+async function streamToBuffer(readableStream) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        readableStream.on("data", (data) => {
+            chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+        });
+        readableStream.on("end", () => {
+            resolve(Buffer.concat(chunks));
+        });
+        readableStream.on("error", reject);
+    });
+}
