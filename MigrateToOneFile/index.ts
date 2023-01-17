@@ -23,41 +23,46 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 async function iterateFolders(context, containerClient, prefixStr) {
 
-    // page size - artificially low as example
-    const maxPageSize = 9999;
+    try {
+        // page size - artificially low as example
+        const maxPageSize = 9999;
 
-    // some options for filtering list
-    const listOptions = {
-        includeMetadata: false,
-        includeSnapshots: false,
-        includeTags: false,
-        includeVersions: false,
-        prefix: prefixStr
-    };
+        // some options for filtering list
+        const listOptions = {
+            includeMetadata: false,
+            includeSnapshots: false,
+            includeTags: false,
+            includeVersions: false,
+            prefix: prefixStr
+        };
 
-    let delimiter = '/';
-    console.log(`Folder ${delimiter}${prefixStr}`);
+        let delimiter = '/';
+        console.log(`Folder ${delimiter}${prefixStr}`);
 
-    for await (const response of containerClient
-        .listBlobsByHierarchy(delimiter, listOptions)
-        .byPage({ maxPageSize })) {
+        for await (const response of containerClient
+            .listBlobsByHierarchy(delimiter, listOptions)
+            .byPage({ maxPageSize })) {
 
-        const segment = response.segment;
+            const segment = response.segment;
 
-        if (segment.blobPrefixes) {
+            if (segment.blobPrefixes) {
 
-            // Do something with each virtual folder
-            for await (const prefix of segment.blobPrefixes) {
-                let summary = await getDataFromFile(containerClient, prefix.name, "summary.json")
-                context.log(prefix.name);
-                let dateSplit = prefix.name.split("/")[0].split("-");
-                let dateMonth = parseInt(dateSplit[1]) < 10 ? "0" + dateSplit[1] : dateSplit[1];
-                let dateDay = parseInt(dateSplit[2]) < 10 ? "0" + dateSplit[2] : dateSplit[2];
-                let blobName = `${dateSplit[0]}-${dateMonth}-${dateDay}.json`;
-                let data = await buildDataFromFiles(context, containerClient, prefix.name, summary);
-                await uploadBlobFromFiles(context, blobName, data);
+                // Do something with each virtual folder
+                for await (const prefix of segment.blobPrefixes) {
+                    let summary = await getDataFromFile(containerClient, prefix.name, "summary.json")
+                    context.log(prefix.name);
+                    let dateSplit = prefix.name.split("/")[0].split("-");
+                    let dateMonth = parseInt(dateSplit[1]) < 10 ? "0" + dateSplit[1] : dateSplit[1];
+                    let dateDay = parseInt(dateSplit[2]) < 10 ? "0" + dateSplit[2] : dateSplit[2];
+                    let blobName = `${dateSplit[0]}-${dateMonth}-${dateDay}.json`;
+                    let data = await buildDataFromFiles(context, containerClient, prefix.name, summary);
+                    await uploadBlobFromFiles(context, blobName, data);
+                }
             }
         }
+        return "success"
+    } catch (e) {
+        return e.message;
     }
 }
 
