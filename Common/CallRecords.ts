@@ -59,7 +59,7 @@ export async function getDataFromFile(containerClient: any, prefix: string, file
     const deleteoptions = {
         deleteSnapshots: 'include' // or 'only'
     }
-    blobClient.delete(deleteoptions);
+    await blobClient.delete(deleteoptions);
     console.log(`Deleted blob ${prefix}${fileName}`);
 
     return JSON.parse(downloaded)
