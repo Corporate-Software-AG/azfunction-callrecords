@@ -9,7 +9,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     let token = await getToken();
     let enddate = new Date();
-    enddate.setDate(enddate.getDate());
+    enddate.setDate(enddate.getDate() - 1);
     let startDate = new Date();
     startDate.setDate(enddate.getDate() - 1);
     let callRecords = await getCallRecords(token, startDate, enddate);
