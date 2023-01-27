@@ -10,10 +10,10 @@ if (!CONNECTION_STRING) throw Error('Azure Storage Connection string not found')
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     context.log('HTTP trigger function processed a request.');
     const blobServiceClient = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
-    const containerName = "call-records";
-    let containerClient = blobServiceClient.getContainerClient(containerName);
+    const sourceContainerName = "call-records";
+    let sourceContainerClient = blobServiceClient.getContainerClient(sourceContainerName);
 
-    let message = await iterateFolders(context, containerClient, "")
+    let message = await iterateFolders(context, sourceContainerClient, "")
 
     context.res = {
         // status: 200, /* Defaults to 200 */
@@ -21,7 +21,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     };
 };
 
-async function iterateFolders(context, containerClient, prefixStr) {
+async function iterateFolders(context, sourceContainerClient, prefixStr) {
 
     try {
         // page size - artificially low as example
@@ -39,7 +39,7 @@ async function iterateFolders(context, containerClient, prefixStr) {
         let delimiter = '/';
         console.log(`Folder ${delimiter}${prefixStr}`);
 
-        for await (const response of containerClient
+        for await (const response of sourceContainerClient
             .listBlobsByHierarchy(delimiter, listOptions)
             .byPage({ maxPageSize })) {
 
@@ -49,14 +49,16 @@ async function iterateFolders(context, containerClient, prefixStr) {
 
                 // Do something with each virtual folder
                 for await (const prefix of segment.blobPrefixes) {
-                    let summary = await getDataFromFile(containerClient, prefix.name, "summary.json")
-                    context.log(prefix.name);
-                    let dateSplit = prefix.name.split("/")[0].split("-");
-                    let dateMonth = parseInt(dateSplit[1]) < 10 ? "0" + dateSplit[1] : dateSplit[1];
-                    let dateDay = parseInt(dateSplit[2]) < 10 ? "0" + dateSplit[2] : dateSplit[2];
-                    let blobName = `${dateSplit[0]}-${dateMonth}-${dateDay}.json`;
-                    let data = await buildDataFromFiles(context, containerClient, prefix.name, summary);
-                    await uploadBlobFromFiles(context, blobName, data);
+                    let summary = await getDataFromFile(sourceContainerClient, prefix.name, "summary.json")
+                    if (summary.value) {
+                        context.log(prefix.name);
+                        let dateSplit = prefix.name.split("/")[0].split("-");
+                        let dateMonth = parseInt(dateSplit[1]) < 10 ? "0" + dateSplit[1] : dateSplit[1];
+                        let dateDay = parseInt(dateSplit[2]) < 10 ? "0" + dateSplit[2] : dateSplit[2];
+                        let blobName = `${dateSplit[0]}-${dateMonth}-${dateDay}.json`;
+                        let data = await buildDataFromFiles(context, sourceContainerClient, prefix.name, summary);
+                        await uploadBlobFromFiles(context, blobName, data);
+                    }
                 }
             }
         }

@@ -50,19 +50,18 @@ export async function getDetailedCallRecord(token: string, record: any): Promise
 
 export async function getDataFromFile(containerClient: any, prefix: string, fileName: string): Promise<any> {
     console.log(`DOWNLOAD: ${prefix}${fileName}`);
-    let blobClient = await containerClient.getBlobClient(`${prefix}${fileName}`)
-    let downloadResponse = await blobClient.download();
-    const downloaded = (
-        await streamToBuffer(downloadResponse.readableStreamBody)
-    ).toString();
+    try {
+        let blobClient = await containerClient.getBlobClient(`${prefix}${fileName}`)
+        let downloadResponse = await blobClient.download();
+        const downloaded = (
+            await streamToBuffer(downloadResponse.readableStreamBody)
+        ).toString();
 
-    const deleteoptions = {
-        deleteSnapshots: 'include' // or 'only'
+        return JSON.parse(downloaded)
+    } catch (e) {
+        console.log("Not found:", fileName)
+        return null;
     }
-    await blobClient.delete(deleteoptions);
-    console.log(`Deleted blob ${prefix}${fileName}`);
-
-    return JSON.parse(downloaded)
 }
 
 async function streamToBuffer(readableStream) {
