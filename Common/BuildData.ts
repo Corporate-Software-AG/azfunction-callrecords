@@ -21,11 +21,14 @@ export async function buildData(context, token, callRecords) {
                     let participantObj = { displayName: null, phone: null };
                     try { participantObj.displayName = participant.user.displayName; } catch (e) { participantObj.displayName = null }
                     try { participantObj.phone = participant.phone.id; } catch (e) { participantObj.phone = null }
-                    context.log("Participant: ", participantObj);
+                    //context.log("Participant: ", participantObj);
                     recordObj.participants.push(participantObj);
                 }
+                context.log("ADDED: ", recordObj.id)
                 objs.push(recordObj)
             }
+        } else {
+            context.log("SKIPPED: ", record)
         }
     }
     context.log("Export Data: ", objs)
